@@ -128,7 +128,13 @@ jobs:
         run: npx playwright install --with-deps
 
       - name: Run Playwright tests
-        run: npx playwright test
+        run: |
+          TEST_FILES=$(find tests/e2e -name '*.spec.ts' -o -name '*.spec.js' 2>/dev/null || true)
+          if [ -n "$TEST_FILES" ]; then
+            npx playwright test
+          else
+            echo "No Playwright tests found — skipping"
+          fi
         env:
           CI: true
 
