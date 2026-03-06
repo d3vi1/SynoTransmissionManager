@@ -247,6 +247,23 @@ class TransmissionRPC
         ]);
     }
 
+    /**
+     * Move torrent data to a new location.
+     *
+     * @param int    $id       Torrent ID
+     * @param string $location New directory path
+     * @param bool   $move     Move existing data (true) or just change path (false)
+     * @return array RPC result
+     */
+    public function moveTorrent(int $id, string $location, bool $move = true): array
+    {
+        return $this->request('torrent-set-location', [
+            'ids' => [$id],
+            'location' => $location,
+            'move' => $move,
+        ]);
+    }
+
     // ---------------------------------------------------------------
     // Session / settings methods
     // ---------------------------------------------------------------

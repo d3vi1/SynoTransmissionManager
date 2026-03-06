@@ -33,6 +33,8 @@ if (file_exists($autoload)) {
     require_once $srcDir . '/TransmissionRPC.php';
     require_once $srcDir . '/Database.php';
     require_once $srcDir . '/TorrentManager.php';
+    require_once $srcDir . '/RSSManager.php';
+    require_once $srcDir . '/AutomationEngine.php';
 }
 
 // ---------------------------------------------------------------------------
@@ -100,6 +102,45 @@ function createManager(): TorrentManager
     return new TorrentManager($rpc, $db, $allowedPaths);
 }
 
+/**
+ * Create the RSSManager with production dependencies.
+ *
+ * @param TorrentManager $manager Existing torrent manager
+ * @return RSSManager
+ */
+function createRSSManager(TorrentManager $manager): RSSManager
+{
+    $pkgDest = getenv('SYNOPKG_PKGDEST') ?: '/var/packages/TransmissionManager';
+    $db = new Database($pkgDest . '/var/transmission.db');
+    return new RSSManager($db, $manager);
+}
+
+/**
+ * Create the AutomationEngine with production dependencies.
+ *
+ * @return AutomationEngine
+ */
+function createAutomationEngine(): AutomationEngine
+{
+    $pkgDest = getenv('SYNOPKG_PKGDEST') ?: '/var/packages/TransmissionManager';
+    $configPath = $pkgDest . '/var/config.json';
+    $config = [];
+    if (file_exists($configPath)) {
+        $config = json_decode(file_get_contents($configPath), true) ?: [];
+    }
+
+    $rpcHost = $config['rpc_host'] ?? 'localhost';
+    $rpcPort = (int)($config['rpc_port'] ?? 9091);
+    $rpcUser = $config['rpc_username'] ?? null;
+    $rpcPass = $config['rpc_password'] ?? null;
+    $allowedScripts = $config['allowed_script_paths'] ?? ['/volume1/scripts/'];
+
+    $rpc = new TransmissionRPC($rpcHost, $rpcPort, $rpcUser, $rpcPass);
+    $db = new Database($pkgDest . '/var/transmission.db');
+
+    return new AutomationEngine($db, $rpc, $allowedScripts);
+}
+
 // ---------------------------------------------------------------------------
 // Routing
 // ---------------------------------------------------------------------------
@@ -118,6 +159,16 @@ try {
 
         case 'SYNO.Transmission.Settings':
             handleSettingsApi($manager, $user, $method);
+            break;
+
+        case 'SYNO.Transmission.RSS':
+            $rssManager = createRSSManager($manager);
+            handleRSSApi($rssManager, $user, $method);
+            break;
+
+        case 'SYNO.Transmission.Automation':
+            $automationEngine = createAutomationEngine();
+            handleAutomationApi($automationEngine, $user, $method);
             break;
 
         default:
@@ -259,6 +310,178 @@ function handleSettingsApi(TorrentManager $manager, string $user, string $method
 
         default:
             apiResponse(false, ['code' => 404, 'message' => 'Unknown method: ' . $method]);
+    }
+}
+
+/**
+ * Handle SYNO.Transmission.RSS methods.
+ */
+function handleRSSApi(RSSManager $rss, string $user, string $method): void
+{
+    switch ($method) {
+        case 'list_feeds':
+            apiResponse(true, ['feeds' => $rss->listFeeds($user)]);
+            break;
+
+        case 'add_feed':
+            $name = $_REQUEST['name'] ?? '';
+            $url = $_REQUEST['url'] ?? '';
+            $interval = (int)($_REQUEST['refresh_interval'] ?? 1800);
+            if ($name === '' || $url === '') {
+                apiResponse(false, ['code' => 400, 'message' => 'Name and URL required']);
+            }
+            $id = $rss->addFeed($user, $name, $url, $interval);
+            apiResponse(true, ['id' => $id]);
+            break;
+
+        case 'update_feed':
+            $feedId = (int)($_REQUEST['feed_id'] ?? 0);
+            $data = json_decode($_REQUEST['data'] ?? '{}', true) ?: [];
+            if ($feedId <= 0) {
+                apiResponse(false, ['code' => 400, 'message' => 'Missing feed_id']);
+            }
+            $ok = $rss->updateFeed($user, $feedId, $data);
+            apiResponse(true, ['updated' => $ok]);
+            break;
+
+        case 'delete_feed':
+            $feedId = (int)($_REQUEST['feed_id'] ?? 0);
+            if ($feedId <= 0) {
+                apiResponse(false, ['code' => 400, 'message' => 'Missing feed_id']);
+            }
+            $ok = $rss->deleteFeed($user, $feedId);
+            apiResponse(true, ['deleted' => $ok]);
+            break;
+
+        case 'test_feed':
+            $url = $_REQUEST['url'] ?? '';
+            if ($url === '') {
+                apiResponse(false, ['code' => 400, 'message' => 'URL required']);
+            }
+            $items = $rss->testFeed($url);
+            apiResponse(true, ['items' => $items]);
+            break;
+
+        case 'list_filters':
+            $feedId = (int)($_REQUEST['feed_id'] ?? 0);
+            if ($feedId <= 0) {
+                apiResponse(false, ['code' => 400, 'message' => 'Missing feed_id']);
+            }
+            apiResponse(true, ['filters' => $rss->listFilters($user, $feedId)]);
+            break;
+
+        case 'add_filter':
+            $feedId = (int)($_REQUEST['feed_id'] ?? 0);
+            $pattern = $_REQUEST['pattern'] ?? '';
+            $matchMode = $_REQUEST['match_mode'] ?? 'contains';
+            $exclude = $_REQUEST['exclude_pattern'] ?? null;
+            $downloadPath = $_REQUEST['download_path'] ?? null;
+            $labels = $_REQUEST['labels'] ?? null;
+            $paused = filter_var($_REQUEST['start_paused'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            if ($feedId <= 0 || $pattern === '') {
+                apiResponse(false, ['code' => 400, 'message' => 'feed_id and pattern required']);
+            }
+            $id = $rss->addFilter($user, $feedId, $pattern, $matchMode, $exclude, $downloadPath, $labels, $paused);
+            apiResponse(true, ['id' => $id]);
+            break;
+
+        case 'update_filter':
+            $feedId = (int)($_REQUEST['feed_id'] ?? 0);
+            $filterId = (int)($_REQUEST['filter_id'] ?? 0);
+            $data = json_decode($_REQUEST['data'] ?? '{}', true) ?: [];
+            if ($feedId <= 0 || $filterId <= 0) {
+                apiResponse(false, ['code' => 400, 'message' => 'feed_id and filter_id required']);
+            }
+            $ok = $rss->updateFilter($user, $feedId, $filterId, $data);
+            apiResponse(true, ['updated' => $ok]);
+            break;
+
+        case 'delete_filter':
+            $feedId = (int)($_REQUEST['feed_id'] ?? 0);
+            $filterId = (int)($_REQUEST['filter_id'] ?? 0);
+            if ($feedId <= 0 || $filterId <= 0) {
+                apiResponse(false, ['code' => 400, 'message' => 'feed_id and filter_id required']);
+            }
+            $ok = $rss->deleteFilter($user, $feedId, $filterId);
+            apiResponse(true, ['deleted' => $ok]);
+            break;
+
+        case 'test_filter':
+            $title = $_REQUEST['title'] ?? '';
+            $pattern = $_REQUEST['pattern'] ?? '';
+            $matchMode = $_REQUEST['match_mode'] ?? 'contains';
+            $exclude = $_REQUEST['exclude_pattern'] ?? null;
+            $matches = $rss->testFilter($title, $pattern, $matchMode, $exclude);
+            apiResponse(true, ['matches' => $matches]);
+            break;
+
+        case 'get_history':
+            $feedId = (int)($_REQUEST['feed_id'] ?? 0);
+            if ($feedId <= 0) {
+                apiResponse(false, ['code' => 400, 'message' => 'Missing feed_id']);
+            }
+            $history = $rss->getHistory($user, $feedId);
+            apiResponse(true, ['history' => $history]);
+            break;
+
+        default:
+            apiResponse(false, ['code' => 404, 'message' => 'Unknown RSS method: ' . $method]);
+    }
+}
+
+/**
+ * Handle SYNO.Transmission.Automation methods.
+ */
+function handleAutomationApi(AutomationEngine $engine, string $user, string $method): void
+{
+    switch ($method) {
+        case 'list_rules':
+            apiResponse(true, ['rules' => $engine->listRules($user)]);
+            break;
+
+        case 'add_rule':
+            $name = $_REQUEST['name'] ?? '';
+            $triggerType = $_REQUEST['trigger_type'] ?? '';
+            $triggerValue = $_REQUEST['trigger_value'] ?? null;
+            $conditions = json_decode($_REQUEST['conditions'] ?? '[]', true) ?: [];
+            $actions = json_decode($_REQUEST['actions'] ?? '[]', true) ?: [];
+            if ($name === '' || $triggerType === '') {
+                apiResponse(false, ['code' => 400, 'message' => 'Name and trigger_type required']);
+            }
+            $id = $engine->addRule($user, $name, $triggerType, $triggerValue, $conditions, $actions);
+            apiResponse(true, ['id' => $id]);
+            break;
+
+        case 'update_rule':
+            $ruleId = (int)($_REQUEST['rule_id'] ?? 0);
+            $data = json_decode($_REQUEST['data'] ?? '{}', true) ?: [];
+            if ($ruleId <= 0) {
+                apiResponse(false, ['code' => 400, 'message' => 'Missing rule_id']);
+            }
+            $ok = $engine->updateRule($user, $ruleId, $data);
+            apiResponse(true, ['updated' => $ok]);
+            break;
+
+        case 'delete_rule':
+            $ruleId = (int)($_REQUEST['rule_id'] ?? 0);
+            if ($ruleId <= 0) {
+                apiResponse(false, ['code' => 400, 'message' => 'Missing rule_id']);
+            }
+            $ok = $engine->deleteRule($user, $ruleId);
+            apiResponse(true, ['deleted' => $ok]);
+            break;
+
+        case 'test_rule':
+            $ruleId = (int)($_REQUEST['rule_id'] ?? 0);
+            if ($ruleId <= 0) {
+                apiResponse(false, ['code' => 400, 'message' => 'Missing rule_id']);
+            }
+            $matches = $engine->testRule($user, $ruleId);
+            apiResponse(true, ['matches' => $matches]);
+            break;
+
+        default:
+            apiResponse(false, ['code' => 404, 'message' => 'Unknown Automation method: ' . $method]);
     }
 }
 

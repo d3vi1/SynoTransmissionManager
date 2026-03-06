@@ -1,0 +1,56 @@
+{
+    "SYNO.Transmission.RSS": {
+        "path": "src/entry.php",
+        "lib": "webapi",
+        "methods": {
+            "1": {
+                "list_feeds": {
+                    "grantByDefault": true,
+                    "allowUser": ["admin.local", "admin.ldap", "admin.domain", "normal.local", "normal.ldap", "normal.domain"]
+                },
+                "add_feed": {
+                    "grantByDefault": true,
+                    "allowUser": ["admin.local", "admin.ldap", "admin.domain", "normal.local", "normal.ldap", "normal.domain"]
+                },
+                "update_feed": {
+                    "grantByDefault": true,
+                    "allowUser": ["admin.local", "admin.ldap", "admin.domain", "normal.local", "normal.ldap", "normal.domain"]
+                },
+                "delete_feed": {
+                    "grantByDefault": true,
+                    "allowUser": ["admin.local", "admin.ldap", "admin.domain", "normal.local", "normal.ldap", "normal.domain"]
+                },
+                "test_feed": {
+                    "grantByDefault": true,
+                    "allowUser": ["admin.local", "admin.ldap", "admin.domain", "normal.local", "normal.ldap", "normal.domain"]
+                },
+                "list_filters": {
+                    "grantByDefault": true,
+                    "allowUser": ["admin.local", "admin.ldap", "admin.domain", "normal.local", "normal.ldap", "normal.domain"]
+                },
+                "add_filter": {
+                    "grantByDefault": true,
+                    "allowUser": ["admin.local", "admin.ldap", "admin.domain", "normal.local", "normal.ldap", "normal.domain"]
+                },
+                "update_filter": {
+                    "grantByDefault": true,
+                    "allowUser": ["admin.local", "admin.ldap", "admin.domain", "normal.local", "normal.ldap", "normal.domain"]
+                },
+                "delete_filter": {
+                    "grantByDefault": true,
+                    "allowUser": ["admin.local", "admin.ldap", "admin.domain", "normal.local", "normal.ldap", "normal.domain"]
+                },
+                "test_filter": {
+                    "grantByDefault": true,
+                    "allowUser": ["admin.local", "admin.ldap", "admin.domain", "normal.local", "normal.ldap", "normal.domain"]
+                },
+                "get_history": {
+                    "grantByDefault": true,
+                    "allowUser": ["admin.local", "admin.ldap", "admin.domain", "normal.local", "normal.ldap", "normal.domain"]
+                }
+            }
+        },
+        "minVersion": 1,
+        "maxVersion": 1
+    }
+}
