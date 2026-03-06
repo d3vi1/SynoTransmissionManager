@@ -1,3 +1,44 @@
 #!/bin/bash
-# Pre-installation script
+set -euo pipefail
+
+# Pre-installation script for TransmissionManager
+# Runs before the package files are extracted.
+# $SYNOPKG_PKG_STATUS: INSTALL or UPGRADE
+# $SYNOPKG_OLD_PKGVER: previous version (on upgrade)
+# $SYNOPKG_PKGDEST: target installation directory
+
+PACKAGE="TransmissionManager"
+CONFIG_DIR="/var/packages/$PACKAGE/var"
+
+log() {
+    logger -t "$PACKAGE" "$1"
+}
+
+case "${SYNOPKG_PKG_STATUS:-}" in
+    INSTALL)
+        log "Fresh install starting..."
+        # Check minimum disk space (50 MB)
+        AVAIL_KB=$(df -P /var/packages 2>/dev/null | awk 'NR==2 {print $4}' || echo "0")
+        if [ "${AVAIL_KB:-0}" -lt 51200 ]; then
+            log "ERROR: Insufficient disk space (need 50 MB, have ${AVAIL_KB} KB)"
+            echo "Insufficient disk space. At least 50 MB required." >&2
+            exit 1
+        fi
+        ;;
+    UPGRADE)
+        log "Upgrading from ${SYNOPKG_OLD_PKGVER:-unknown}..."
+        # Back up the database and config before upgrade
+        if [ -d "$CONFIG_DIR" ]; then
+            BACKUP_DIR="$CONFIG_DIR/backup-${SYNOPKG_OLD_PKGVER:-unknown}"
+            mkdir -p "$BACKUP_DIR"
+            [ -f "$CONFIG_DIR/transmission.db" ] && cp "$CONFIG_DIR/transmission.db" "$BACKUP_DIR/"
+            [ -f "$CONFIG_DIR/config.json" ] && cp "$CONFIG_DIR/config.json" "$BACKUP_DIR/"
+            log "Pre-upgrade backup created at $BACKUP_DIR"
+        fi
+        ;;
+    *)
+        log "Unknown package status: ${SYNOPKG_PKG_STATUS:-empty}"
+        ;;
+esac
+
 exit 0

@@ -1,4 +1,32 @@
 #!/bin/bash
-# Pre-uninstall script — stop service before removing
-/var/packages/TransmissionManager/scripts/start-stop-status stop || true
+set -euo pipefail
+
+# Pre-uninstall script for TransmissionManager
+# Runs before the package files are removed.
+# $SYNOPKG_PKG_STATUS: UNINSTALL
+# $SYNOPKG_PKGDEST: target installation directory
+
+PACKAGE="TransmissionManager"
+CONFIG_DIR="/var/packages/$PACKAGE/var"
+RUN_FILE="$CONFIG_DIR/.package_running"
+
+log() {
+    logger -t "$PACKAGE" "$1"
+}
+
+# Stop the package if running
+if [ -f "$RUN_FILE" ]; then
+    log "Stopping $PACKAGE before uninstall..."
+    rm -f "$RUN_FILE"
+fi
+
+# Optional: create a backup before uninstall
+if [ -d "$CONFIG_DIR" ]; then
+    BACKUP_DIR="$CONFIG_DIR/backup-uninstall-$(date +%Y%m%d%H%M%S)"
+    mkdir -p "$BACKUP_DIR"
+    [ -f "$CONFIG_DIR/transmission.db" ] && cp "$CONFIG_DIR/transmission.db" "$BACKUP_DIR/"
+    [ -f "$CONFIG_DIR/config.json" ] && cp "$CONFIG_DIR/config.json" "$BACKUP_DIR/"
+    log "Backup created at $BACKUP_DIR"
+fi
+
 exit 0

@@ -1,43 +1,72 @@
 #!/bin/bash
-# Service control script for Transmission daemon
+set -euo pipefail
 
-TRANSMISSION_BIN="/var/packages/TransmissionManager/target/bin/transmission-daemon"
-PID_FILE="/var/packages/TransmissionManager/var/transmission.pid"
-CONFIG_DIR="/var/packages/TransmissionManager/var"
+# Service control script for TransmissionManager
+#
+# TransmissionManager is a web UI package — it does not manage the
+# Transmission daemon directly.  The daemon is assumed to be running
+# independently.  This script handles package-level health and
+# readiness checks required by DSM 7.
+#
+# DSM calls this script with one of: start | stop | status
+# Exit 0 = running/ok, Exit 1 = stopped/error
 
-case "$1" in
+PACKAGE="TransmissionManager"
+PKG_DIR="/var/packages/$PACKAGE"
+CONFIG_DIR="$PKG_DIR/var"
+RUN_FILE="$CONFIG_DIR/.package_running"
+
+log() {
+    logger -t "$PACKAGE" "$1"
+}
+
+case "${1:-}" in
     start)
-        if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
-            echo "Transmission is already running"
-            exit 0
+        log "Starting $PACKAGE..."
+
+        # Ensure config directory exists
+        if [ ! -d "$CONFIG_DIR" ]; then
+            log "ERROR: Config directory missing: $CONFIG_DIR"
+            exit 1
         fi
 
-        "$TRANSMISSION_BIN" \
-            --config-dir "$CONFIG_DIR" \
-            --pid-file "$PID_FILE" \
-            --logfile "$CONFIG_DIR/transmission.log"
+        # Verify database exists (created by postinst)
+        if [ ! -f "$CONFIG_DIR/transmission.db" ]; then
+            log "WARNING: Database not found, it will be created on first use"
+        fi
 
-        exit $?
+        # Verify config.json exists
+        if [ ! -f "$CONFIG_DIR/config.json" ]; then
+            log "ERROR: Configuration file missing: $CONFIG_DIR/config.json"
+            exit 1
+        fi
+
+        # Mark package as running
+        touch "$RUN_FILE"
+        log "$PACKAGE started successfully"
+        exit 0
         ;;
 
     stop)
-        if [ ! -f "$PID_FILE" ]; then
-            echo "Transmission is not running"
-            exit 0
-        fi
+        log "Stopping $PACKAGE..."
 
-        kill "$(cat "$PID_FILE")"
-        rm -f "$PID_FILE"
+        # Remove running marker
+        rm -f "$RUN_FILE"
+
+        log "$PACKAGE stopped"
         exit 0
         ;;
 
     status)
-        if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
-            echo "Transmission is running"
+        if [ -f "$RUN_FILE" ]; then
             exit 0
         else
-            echo "Transmission is not running"
             exit 1
         fi
+        ;;
+
+    *)
+        echo "Usage: $0 {start|stop|status}" >&2
+        exit 1
         ;;
 esac

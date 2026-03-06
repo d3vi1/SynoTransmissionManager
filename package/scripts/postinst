@@ -1,23 +1,51 @@
 #!/bin/bash
-# Post-installation script
+set -euo pipefail
 
-SYNOPKG_PKGDEST="/var/packages/TransmissionManager/target"
-CONFIG_DIR="/var/packages/TransmissionManager/var"
+# Post-installation script for TransmissionManager
+# Runs after the package files are extracted.
+# $SYNOPKG_PKG_STATUS: INSTALL or UPGRADE
+# $SYNOPKG_PKGDEST: target installation directory
 
-# Create config directory
+PACKAGE="TransmissionManager"
+SYNOPKG_PKGDEST="${SYNOPKG_PKGDEST:-/var/packages/$PACKAGE/target}"
+CONFIG_DIR="/var/packages/$PACKAGE/var"
+DB_PATH="$CONFIG_DIR/transmission.db"
+SCHEMA_PATH="$SYNOPKG_PKGDEST/schema.sql"
+
+log() {
+    logger -t "$PACKAGE" "$1"
+}
+
+# Create config directory if it doesn't exist
 mkdir -p "$CONFIG_DIR"
 
-# Set up database
-sqlite3 "$CONFIG_DIR/transmission.db" < "$SYNOPKG_PKGDEST/schema.sql"
-
-# Set permissions
-chown -R transmission:transmission "$CONFIG_DIR"
-chmod 755 "$CONFIG_DIR"
-
-# Copy default Transmission settings if not present
-if [ ! -f "$CONFIG_DIR/settings.json" ]; then
-    cp "$SYNOPKG_PKGDEST/etc/transmission-settings.json" "$CONFIG_DIR/settings.json"
-    chown transmission:transmission "$CONFIG_DIR/settings.json"
+# Initialise or migrate the database
+if [ -f "$SCHEMA_PATH" ]; then
+    # CREATE TABLE IF NOT EXISTS is idempotent — safe for upgrades
+    sqlite3 "$DB_PATH" < "$SCHEMA_PATH"
+    log "Database schema applied"
 fi
+
+# Set correct permissions
+chmod 755 "$CONFIG_DIR"
+if [ -f "$DB_PATH" ]; then
+    chmod 644 "$DB_PATH"
+fi
+
+# Create default config.json if not present
+if [ ! -f "$CONFIG_DIR/config.json" ]; then
+    cat > "$CONFIG_DIR/config.json" << 'DEFAULTCONFIG'
+{
+    "rpc_host": "localhost",
+    "rpc_port": 9091,
+    "rpc_username": null,
+    "rpc_password": null,
+    "allowed_paths": ["/volume1/", "/volume2/"]
+}
+DEFAULTCONFIG
+    log "Default config.json created"
+fi
+
+log "Post-install completed for ${SYNOPKG_PKG_STATUS:-unknown}"
 
 exit 0
