@@ -1,3 +1,13 @@
 #!/bin/bash
-# Post-uninstall script
+set -euo pipefail
+
+# Post-uninstall script for TransmissionManager
+# Runs after the package files are removed.
+# User data in /var/packages/TransmissionManager/var/ is preserved
+# by DSM across uninstalls — the user can reinstall to recover.
+
+PACKAGE="TransmissionManager"
+
+logger -t "$PACKAGE" "Package uninstalled. User data preserved in /var/packages/$PACKAGE/var/"
+
 exit 0
