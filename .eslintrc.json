@@ -1,0 +1,25 @@
+{
+    "env": {
+        "browser": true
+    },
+    "parserOptions": {
+        "ecmaVersion": 5
+    },
+    "globals": {
+        "Ext": "readonly",
+        "SYNO": "readonly",
+        "_T": "readonly"
+    },
+    "rules": {
+        "no-undef": "error",
+        "no-unused-vars": ["warn", { "args": "none" }],
+        "semi": ["error", "always"],
+        "no-redeclare": "error",
+        "no-dupe-keys": "error",
+        "no-unreachable": "error",
+        "eqeqeq": ["warn", "smart"],
+        "curly": ["error", "all"],
+        "no-eval": "error",
+        "no-implied-eval": "error"
+    }
+}
