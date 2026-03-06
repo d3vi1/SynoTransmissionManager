@@ -117,6 +117,18 @@ CREATE TABLE IF NOT EXISTS automation_rules (
 );
 SQL
         );
+
+        $this->db->exec(<<<'SQL'
+CREATE TABLE IF NOT EXISTS rate_limits (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user TEXT NOT NULL,
+    action TEXT NOT NULL,
+    timestamp INTEGER NOT NULL
+);
+SQL
+        );
+
+        $this->db->exec('CREATE INDEX IF NOT EXISTS idx_rate_limits_user_action ON rate_limits(user, action)');
     }
 
     // ---------------------------------------------------------------
@@ -677,6 +689,63 @@ SQL
             $rules[] = $row;
         }
         return $rules;
+    }
+
+    // ---------------------------------------------------------------
+    // Rate limiting
+    // ---------------------------------------------------------------
+
+    /**
+     * Record a rate-limited action for a user.
+     *
+     * @param string $user   DSM username
+     * @param string $action Action identifier (e.g. 'torrent_add')
+     */
+    public function recordRateLimit(string $user, string $action): void
+    {
+        $stmt = $this->db->prepare(
+            'INSERT INTO rate_limits (user, action, timestamp) VALUES (:user, :action, :ts)'
+        );
+        $stmt->bindValue(':user', $user, SQLITE3_TEXT);
+        $stmt->bindValue(':action', $action, SQLITE3_TEXT);
+        $stmt->bindValue(':ts', time(), SQLITE3_INTEGER);
+        $stmt->execute();
+    }
+
+    /**
+     * Count rate limit records for a user/action since a given timestamp.
+     *
+     * @param string $user           DSM username
+     * @param string $action         Action identifier
+     * @param int    $sinceTimestamp  Unix timestamp (records with ts >= this are counted)
+     * @return int Number of matching records
+     */
+    public function getRateLimitCount(string $user, string $action, int $sinceTimestamp): int
+    {
+        $stmt = $this->db->prepare(
+            'SELECT COUNT(*) AS cnt FROM rate_limits WHERE user = :user AND action = :action AND timestamp >= :ts'
+        );
+        $stmt->bindValue(':user', $user, SQLITE3_TEXT);
+        $stmt->bindValue(':action', $action, SQLITE3_TEXT);
+        $stmt->bindValue(':ts', $sinceTimestamp, SQLITE3_INTEGER);
+        $result = $stmt->execute();
+
+        $row = $result->fetchArray(SQLITE3_ASSOC);
+        return (int)($row['cnt'] ?? 0);
+    }
+
+    /**
+     * Remove rate limit records older than the given timestamp.
+     *
+     * @param int $beforeTimestamp Unix timestamp (records with ts < this are removed)
+     */
+    public function cleanupRateLimits(int $beforeTimestamp): void
+    {
+        $stmt = $this->db->prepare(
+            'DELETE FROM rate_limits WHERE timestamp < :ts'
+        );
+        $stmt->bindValue(':ts', $beforeTimestamp, SQLITE3_INTEGER);
+        $stmt->execute();
     }
 
     // ---------------------------------------------------------------

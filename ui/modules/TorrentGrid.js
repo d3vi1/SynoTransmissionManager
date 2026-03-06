@@ -13,6 +13,7 @@ SYNO.SDS.TransmissionManager.TorrentGrid = Ext.extend(Ext.grid.GridPanel, {
     pollTimer: null,
     currentFilter: null,
     currentSearch: '',
+    _initialLoadDone: false,
 
     constructor: function (config) {
         this.appWindow = config.appWindow || null;
@@ -41,6 +42,9 @@ SYNO.SDS.TransmissionManager.TorrentGrid = Ext.extend(Ext.grid.GridPanel, {
             ],
             data: []
         });
+
+        var emptyMsg = (_T('ui', 'no_torrents') || 'No torrents yet') + '. ' +
+            (_T('ui', 'add_first') || 'Click Add Torrent to get started.');
 
         var cfg = Ext.apply({
             store: store,
@@ -110,12 +114,72 @@ SYNO.SDS.TransmissionManager.TorrentGrid = Ext.extend(Ext.grid.GridPanel, {
             ],
             viewConfig: {
                 forceFit: true,
-                emptyText: _T('common', 'search') + '...'
+                emptyText: emptyMsg
+            },
+            listeners: {
+                afterrender: function (grid) {
+                    grid.initKeyboardShortcuts();
+                }
             }
         }, config);
 
         SYNO.SDS.TransmissionManager.TorrentGrid.superclass.constructor.call(this, cfg);
         this.startPolling();
+    },
+
+    // ---------------------------------------------------------------
+    // Keyboard shortcuts
+    // ---------------------------------------------------------------
+
+    /**
+     * Initialise keyboard shortcuts on the grid element.
+     */
+    initKeyboardShortcuts: function () {
+        var self = this;
+        var el = this.getEl();
+        if (!el) {
+            return;
+        }
+
+        new Ext.KeyMap(el, [
+            {
+                // Delete key — fire removetorrents event on appWindow
+                key: Ext.EventObject.DELETE,
+                fn: function () {
+                    var selections = self.getSelectionModel().getSelections();
+                    if (selections.length > 0 && self.appWindow) {
+                        self.appWindow.fireEvent('removetorrents');
+                    }
+                }
+            },
+            {
+                // Ctrl+A — select all rows
+                key: 'a',
+                ctrl: true,
+                fn: function (keyCode, e) {
+                    e.preventDefault();
+                    self.getSelectionModel().selectAll();
+                }
+            },
+            {
+                // Enter — open detail if single selection
+                key: Ext.EventObject.ENTER,
+                fn: function () {
+                    var selections = self.getSelectionModel().getSelections();
+                    if (selections.length === 1 && self.appWindow && self.appWindow.detailPanel) {
+                        self.appWindow.detailPanel.loadTorrent(selections[0]);
+                        self.appWindow.detailPanel.expand(true);
+                    }
+                }
+            },
+            {
+                // Escape — deselect all
+                key: Ext.EventObject.ESC,
+                fn: function () {
+                    self.getSelectionModel().clearSelections();
+                }
+            }
+        ]);
     },
 
     // ---------------------------------------------------------------
@@ -146,17 +210,34 @@ SYNO.SDS.TransmissionManager.TorrentGrid = Ext.extend(Ext.grid.GridPanel, {
 
     /**
      * Fetch torrents from the API and refresh the store.
+     * Shows loadMask on initial load. Handles daemon-down state.
      */
     loadTorrents: function () {
         var self = this;
+        var Util = SYNO.SDS.TransmissionManager.Util;
+
+        // Show loadMask on initial load
+        if (!this._initialLoadDone && this.el) {
+            this.el.mask(_T('common', 'loading') || 'Loading...');
+        }
+
         SYNO.API.Request({
             api: 'SYNO.Transmission.Torrent',
             method: 'list',
             version: 1,
             callback: function (success, response) {
+                // Unmask after initial load
+                if (!self._initialLoadDone && self.el) {
+                    self.el.unmask();
+                    self._initialLoadDone = true;
+                }
+
                 if (success && response && response.torrents) {
+                    Util.hideDaemonDown();
                     self.updateStore(response.torrents);
                     self.updateStats(response.torrents);
+                } else {
+                    Util.showDaemonDown();
                 }
             }
         });

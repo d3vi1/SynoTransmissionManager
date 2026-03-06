@@ -151,6 +151,15 @@ test_rule = "Tester la regle"
 test_matches = "Torrents correspondants"
 confirm_delete = "Supprimer cette regle d'automatisation ?"
 
+[ui]
+daemon_down = "Impossible de se connecter au daemon Transmission"
+no_torrents = "Aucun torrent pour le moment"
+add_first = "Cliquez sur Ajouter un torrent pour commencer"
+success_add = "Torrent ajoute avec succes"
+success_start = "Torrent(s) demarre(s)"
+success_stop = "Torrent(s) arrete(s)"
+success_remove = "Torrent(s) supprime(s)"
+
 [error]
 add_failed = "Echec de l'ajout du torrent"
 start_failed = "Echec du demarrage du torrent"
