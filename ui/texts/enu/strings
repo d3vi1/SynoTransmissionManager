@@ -2,6 +2,8 @@
 search = "Search"
 ok = "OK"
 cancel = "Cancel"
+confirm = "Confirm"
+loading = "Loading..."
 
 [torrent]
 add_torrent = "Add Torrent"
@@ -16,6 +18,7 @@ ratio = "Ratio"
 start = "Start"
 pause = "Pause"
 remove = "Remove"
+labels = "Labels"
 
 [category]
 all = "All"
@@ -45,5 +48,48 @@ labels = "Labels"
 labels_hint = "Comma-separated labels"
 add_torrent = "Add Torrent"
 
+[detail]
+files = "Files"
+peers = "Peers"
+trackers = "Trackers"
+info = "Info"
+priority = "Priority"
+address = "Address"
+client = "Client"
+status_result = "Status"
+seeds = "Seeds"
+leechers = "Leechers"
+peer_count = "Peers"
+
+[settings]
+title = "Settings"
+connection = "Connection"
+speed = "Speed Limits"
+download = "Download"
+host = "Host"
+port = "Port"
+username = "Username"
+password = "Password"
+test_connection = "Test Connection"
+connection_success = "Connection successful"
+connection_failed = "Connection failed"
+save = "Save"
+speed_limit_down = "Download Limit (KiB/s)"
+speed_limit_up = "Upload Limit (KiB/s)"
+speed_limit_enabled = "Enable Speed Limits"
+download_dir = "Download Directory"
+incomplete_dir = "Incomplete Directory"
+incomplete_dir_enabled = "Use Incomplete Directory"
+
+[remove]
+confirm_title = "Remove Torrent"
+confirm_message = "Are you sure you want to remove the selected torrent(s)?"
+delete_data = "Also delete downloaded data"
+
 [error]
 add_failed = "Failed to add torrent"
+start_failed = "Failed to start torrent"
+stop_failed = "Failed to stop torrent"
+remove_failed = "Failed to remove torrent"
+settings_failed = "Failed to save settings"
+connection_failed = "Cannot connect to Transmission"

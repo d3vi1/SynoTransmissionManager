@@ -2,6 +2,8 @@
 search = "Cautare"
 ok = "OK"
 cancel = "Anulare"
+confirm = "Confirmare"
+loading = "Se incarca..."
 
 [torrent]
 add_torrent = "Adauga Torrent"
@@ -16,6 +18,7 @@ ratio = "Raport"
 start = "Porneste"
 pause = "Pauza"
 remove = "Sterge"
+labels = "Etichete"
 
 [category]
 all = "Toate"
@@ -45,5 +48,48 @@ labels = "Etichete"
 labels_hint = "Etichete separate prin virgula"
 add_torrent = "Adauga Torrent"
 
+[detail]
+files = "Fisiere"
+peers = "Colegi"
+trackers = "Trackere"
+info = "Informatii"
+priority = "Prioritate"
+address = "Adresa"
+client = "Client"
+status_result = "Stare"
+seeds = "Surse"
+leechers = "Descarcatori"
+peer_count = "Colegi"
+
+[settings]
+title = "Setari"
+connection = "Conexiune"
+speed = "Limite Viteza"
+download = "Descarcare"
+host = "Gazda"
+port = "Port"
+username = "Utilizator"
+password = "Parola"
+test_connection = "Testeaza Conexiunea"
+connection_success = "Conexiune reusita"
+connection_failed = "Conexiune esuata"
+save = "Salveaza"
+speed_limit_down = "Limita Descarcare (KiB/s)"
+speed_limit_up = "Limita Incarcare (KiB/s)"
+speed_limit_enabled = "Activeaza Limite Viteza"
+download_dir = "Director Descarcare"
+incomplete_dir = "Director Incomplete"
+incomplete_dir_enabled = "Foloseste Director Incomplete"
+
+[remove]
+confirm_title = "Sterge Torrent"
+confirm_message = "Sunteti sigur ca doriti sa stergeti torrentul/torrentele selectate?"
+delete_data = "Sterge si datele descarcate"
+
 [error]
 add_failed = "Adaugare torrent esuata"
+start_failed = "Pornire torrent esuata"
+stop_failed = "Oprire torrent esuata"
+remove_failed = "Stergere torrent esuata"
+settings_failed = "Salvare setari esuata"
+connection_failed = "Nu se poate conecta la Transmission"
