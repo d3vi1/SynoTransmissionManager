@@ -1,5 +1,5 @@
 package="TransmissionManager"
-version="0.1.0-dev"
+version="1.0.0-beta.1"
 description="Modern Transmission BitTorrent client for DSM"
 arch="noarch"
 maintainer="d3vi1"
