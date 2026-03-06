@@ -1,0 +1,70 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  lint-php:
+    name: PHP Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+      - run: find webapi/ tests/ -name '*.php' -print0 | xargs -0 -n1 php -l
+
+  lint-js:
+    name: JavaScript Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npx eslint ui/modules/ ui/config/
+
+  test:
+    name: PHP Tests
+    runs-on: ubuntu-latest
+    needs: [lint-php]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          extensions: curl, json, sqlite3
+          tools: composer
+      - uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+      - run: composer install --no-interaction --prefer-dist
+      - run: ./vendor/bin/phpunit
+
+  release:
+    name: Build & Release
+    runs-on: ubuntu-latest
+    needs: [lint-php, lint-js, test]
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build SPK
+        run: |
+          chmod +x build.sh
+          ./build.sh
+      - name: Compute checksums
+        run: |
+          cd build
+          sha256sum *.spk > SHA256SUMS.txt
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            build/*.spk
+            build/SHA256SUMS.txt
+          generate_release_notes: true
