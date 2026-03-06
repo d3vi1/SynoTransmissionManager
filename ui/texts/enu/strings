@@ -151,6 +151,15 @@ test_rule = "Test Rule"
 test_matches = "Matching torrents"
 confirm_delete = "Delete this automation rule?"
 
+[ui]
+daemon_down = "Cannot connect to Transmission daemon"
+no_torrents = "No torrents yet"
+add_first = "Click Add Torrent to get started"
+success_add = "Torrent added successfully"
+success_start = "Torrent(s) started"
+success_stop = "Torrent(s) stopped"
+success_remove = "Torrent(s) removed"
+
 [error]
 add_failed = "Failed to add torrent"
 start_failed = "Failed to start torrent"

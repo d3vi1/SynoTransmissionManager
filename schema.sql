@@ -55,3 +55,12 @@ CREATE TABLE IF NOT EXISTS automation_rules (
     actions TEXT, -- JSON
     created_date DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS rate_limits (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user TEXT NOT NULL,
+    action TEXT NOT NULL,
+    timestamp INTEGER NOT NULL
+);
+
+CREATE INDEX idx_rate_limits_user_action ON rate_limits(user, action);

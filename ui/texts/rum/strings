@@ -151,6 +151,15 @@ test_rule = "Testeaza Regula"
 test_matches = "Torrente potrivite"
 confirm_delete = "Stergeti aceasta regula de automatizare?"
 
+[ui]
+daemon_down = "Nu se poate conecta la daemonul Transmission"
+no_torrents = "Niciun torrent inca"
+add_first = "Apasati Adauga Torrent pentru a incepe"
+success_add = "Torrent adaugat cu succes"
+success_start = "Torrent(e) pornit(e)"
+success_stop = "Torrent(e) oprit(e)"
+success_remove = "Torrent(e) sters(e)"
+
 [error]
 add_failed = "Adaugare torrent esuata"
 start_failed = "Pornire torrent esuata"

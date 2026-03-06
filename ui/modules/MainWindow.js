@@ -6,8 +6,8 @@
  *   - center: TorrentGrid with real-time polling
  *   - south:  DetailPanel with tabbed torrent details
  *
- * Toolbar provides Add, Start, Stop, Remove, Settings, and search
- * with a 300 ms debounce.
+ * Toolbar provides Add, Start, Stop, Remove, RSS, Automation, Settings,
+ * and search with a 300 ms debounce.
  */
 Ext.ns('SYNO.SDS.TransmissionManager');
 
@@ -100,6 +100,157 @@ SYNO.SDS.TransmissionManager.MainWindow = Ext.extend(SYNO.SDS.AppWindow, {
         }, config);
 
         SYNO.SDS.TransmissionManager.MainWindow.superclass.constructor.call(this, cfg);
+
+        this.initEventHandlers();
+    },
+
+    /**
+     * Wire up application-level event handlers.
+     */
+    initEventHandlers: function () {
+        var self = this;
+        var Util = SYNO.SDS.TransmissionManager.Util;
+
+        // Add torrent — open AddTorrentWindow
+        this.on('addtorrent', function () {
+            var addWin = new SYNO.SDS.TransmissionManager.AddTorrentWindow({
+                appWindow: self,
+                listeners: {
+                    torrentadded: function () {
+                        Util.showToast(
+                            _T('ui', 'success_add') || 'Torrent added successfully',
+                            'success'
+                        );
+                        self.torrentGrid.loadTorrents();
+                    }
+                }
+            });
+            addWin.show();
+        });
+
+        // Settings — open SettingsPanel
+        this.on('opensettings', function () {
+            var settingsWin = new SYNO.SDS.TransmissionManager.SettingsPanel({
+                appWindow: self
+            });
+            settingsWin.show();
+        });
+
+        // Start torrents
+        this.on('starttorrents', function () {
+            var selections = self.torrentGrid.getSelectionModel().getSelections();
+            if (selections.length === 0) {
+                return;
+            }
+            var ids = [];
+            var i;
+            for (i = 0; i < selections.length; i++) {
+                ids.push(selections[i].get('id'));
+            }
+            SYNO.API.Request({
+                api: 'SYNO.Transmission.Torrent',
+                method: 'start',
+                version: 1,
+                params: { ids: ids },
+                callback: function (success) {
+                    if (success) {
+                        Util.showToast(
+                            _T('ui', 'success_start') || 'Torrent(s) started',
+                            'success'
+                        );
+                        self.torrentGrid.loadTorrents();
+                    } else {
+                        Util.showError(_T('error', 'start_failed') || 'Failed to start torrent');
+                    }
+                }
+            });
+        });
+
+        // Stop torrents
+        this.on('stoptorrents', function () {
+            var selections = self.torrentGrid.getSelectionModel().getSelections();
+            if (selections.length === 0) {
+                return;
+            }
+            var ids = [];
+            var i;
+            for (i = 0; i < selections.length; i++) {
+                ids.push(selections[i].get('id'));
+            }
+            SYNO.API.Request({
+                api: 'SYNO.Transmission.Torrent',
+                method: 'stop',
+                version: 1,
+                params: { ids: ids },
+                callback: function (success) {
+                    if (success) {
+                        Util.showToast(
+                            _T('ui', 'success_stop') || 'Torrent(s) stopped',
+                            'success'
+                        );
+                        self.torrentGrid.loadTorrents();
+                    } else {
+                        Util.showError(_T('error', 'stop_failed') || 'Failed to stop torrent');
+                    }
+                }
+            });
+        });
+
+        // Remove torrents — with confirmation dialog
+        this.on('removetorrents', function () {
+            var selections = self.torrentGrid.getSelectionModel().getSelections();
+            if (selections.length === 0) {
+                return;
+            }
+
+            Ext.Msg.confirm(
+                _T('remove', 'confirm_title') || 'Remove Torrent',
+                _T('remove', 'confirm_message') || 'Are you sure you want to remove the selected torrent(s)?',
+                function (btn) {
+                    if (btn !== 'yes') {
+                        return;
+                    }
+                    var ids = [];
+                    var i;
+                    for (i = 0; i < selections.length; i++) {
+                        ids.push(selections[i].get('id'));
+                    }
+                    SYNO.API.Request({
+                        api: 'SYNO.Transmission.Torrent',
+                        method: 'remove',
+                        version: 1,
+                        params: { ids: ids },
+                        callback: function (success) {
+                            if (success) {
+                                Util.showToast(
+                                    _T('ui', 'success_remove') || 'Torrent(s) removed',
+                                    'success'
+                                );
+                                self.torrentGrid.loadTorrents();
+                            } else {
+                                Util.showError(_T('error', 'remove_failed') || 'Failed to remove torrent');
+                            }
+                        }
+                    });
+                }
+            );
+        });
+
+        // Open RSS Manager
+        this.on('openrss', function () {
+            var rssWin = new SYNO.SDS.TransmissionManager.RSSManager({
+                appWindow: self
+            });
+            rssWin.show();
+        });
+
+        // Open Automation Manager
+        this.on('openautomation', function () {
+            var autoWin = new SYNO.SDS.TransmissionManager.AutomationManager({
+                appWindow: self
+            });
+            autoWin.show();
+        });
     },
 
     /**
@@ -143,6 +294,23 @@ SYNO.SDS.TransmissionManager.MainWindow = Ext.extend(SYNO.SDS.AppWindow, {
                     disabled: true,
                     handler: function () {
                         self.fireEvent('removetorrents');
+                    }
+                },
+                '-',
+                {
+                    text: _T('rss', 'title') || 'RSS',
+                    iconCls: 'syno-ux-icon-rss',
+                    itemId: 'btnRSS',
+                    handler: function () {
+                        self.fireEvent('openrss');
+                    }
+                },
+                {
+                    text: _T('automation', 'title') || 'Automation',
+                    iconCls: 'syno-ux-icon-automation',
+                    itemId: 'btnAutomation',
+                    handler: function () {
+                        self.fireEvent('openautomation');
                     }
                 },
                 '->',

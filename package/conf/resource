@@ -1,0 +1,11 @@
+{
+  "file-station": {
+    "file-type-handler": [
+      {
+        "ext": "torrent",
+        "label": "Open with Transmission Manager",
+        "handler": "/var/packages/TransmissionManager/target/webapi/src/torrent-handler.php"
+      }
+    ]
+  }
+}

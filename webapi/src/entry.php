@@ -35,6 +35,8 @@ if (file_exists($autoload)) {
     require_once $srcDir . '/TorrentManager.php';
     require_once $srcDir . '/RSSManager.php';
     require_once $srcDir . '/AutomationEngine.php';
+    require_once $srcDir . '/NotificationService.php';
+    require_once $srcDir . '/RateLimiter.php';
 }
 
 // ---------------------------------------------------------------------------
@@ -141,6 +143,65 @@ function createAutomationEngine(): AutomationEngine
     return new AutomationEngine($db, $rpc, $allowedScripts);
 }
 
+/**
+ * Check if the authenticated user is a DSM administrator.
+ *
+ * Checks the HTTP_X_SYNO_IS_ADMIN header set by DSM for admin users.
+ *
+ * @param string $user DSM username (unused, reserved for future use)
+ * @return bool True if the user has admin privileges
+ */
+function isAdmin(string $user): bool
+{
+    $isAdmin = $_SERVER['HTTP_X_SYNO_IS_ADMIN'] ?? '';
+    return $isAdmin === 'true' || $isAdmin === '1';
+}
+
+/**
+ * Require admin privileges or respond with a 403 error.
+ *
+ * @param string $user DSM username
+ */
+function requireAdmin(string $user): void
+{
+    if (!isAdmin($user)) {
+        apiResponse(false, ['code' => 403, 'message' => 'Admin privileges required']);
+    }
+}
+
+/**
+ * Create a RateLimiter with production dependencies.
+ *
+ * @return RateLimiter
+ */
+function createRateLimiter(): RateLimiter
+{
+    $pkgDest = getenv('SYNOPKG_PKGDEST') ?: '/var/packages/TransmissionManager';
+    $db = new Database($pkgDest . '/var/transmission.db');
+    return new RateLimiter($db);
+}
+
+/**
+ * Create a NotificationService with production dependencies.
+ *
+ * @return NotificationService
+ */
+function createNotificationService(): NotificationService
+{
+    $pkgDest = getenv('SYNOPKG_PKGDEST') ?: '/var/packages/TransmissionManager';
+    $configPath = $pkgDest . '/var/config.json';
+    $config = [];
+    if (file_exists($configPath)) {
+        $config = json_decode(file_get_contents($configPath), true) ?: [];
+    }
+
+    $notifier = new NotificationService();
+    $verbosity = $config['notification_verbosity'] ?? 'all';
+    $notifier->setVerbosity($verbosity);
+
+    return $notifier;
+}
+
 // ---------------------------------------------------------------------------
 // Routing
 // ---------------------------------------------------------------------------
@@ -150,11 +211,18 @@ $method = $_REQUEST['method'] ?? '';
 
 try {
     $user = getAuthenticatedUser();
+
+    // Rate limiting: check global API call limit
+    $rateLimiter = createRateLimiter();
+    $rateLimiter->cleanup();
+    $rateLimiter->checkDefaultLimit($user, 'api_call');
+
     $manager = createManager();
+    $notifier = createNotificationService();
 
     switch ($api) {
         case 'SYNO.Transmission.Torrent':
-            handleTorrentApi($manager, $user, $method);
+            handleTorrentApi($manager, $user, $method, $rateLimiter, $notifier);
             break;
 
         case 'SYNO.Transmission.Settings':
@@ -163,12 +231,12 @@ try {
 
         case 'SYNO.Transmission.RSS':
             $rssManager = createRSSManager($manager);
-            handleRSSApi($rssManager, $user, $method);
+            handleRSSApi($rssManager, $user, $method, $rateLimiter);
             break;
 
         case 'SYNO.Transmission.Automation':
             $automationEngine = createAutomationEngine();
-            handleAutomationApi($automationEngine, $user, $method);
+            handleAutomationApi($automationEngine, $user, $method, $rateLimiter);
             break;
 
         default:
@@ -195,7 +263,7 @@ try {
 /**
  * Handle SYNO.Transmission.Torrent methods.
  */
-function handleTorrentApi(TorrentManager $manager, string $user, string $method): void
+function handleTorrentApi(TorrentManager $manager, string $user, string $method, RateLimiter $rateLimiter, NotificationService $notifier): void
 {
     switch ($method) {
         case 'list':
@@ -216,6 +284,8 @@ function handleTorrentApi(TorrentManager $manager, string $user, string $method)
             break;
 
         case 'add':
+            $rateLimiter->checkDefaultLimit($user, 'torrent_add');
+
             $url = $_REQUEST['url'] ?? '';
             $downloadDir = $_REQUEST['download_dir'] ?? null;
             $paused = filter_var($_REQUEST['paused'] ?? false, FILTER_VALIDATE_BOOLEAN);
@@ -231,6 +301,13 @@ function handleTorrentApi(TorrentManager $manager, string $user, string $method)
                 $fileContent = file_get_contents($_FILES['torrent_file']['tmp_name']);
                 $result = $manager->addTorrentFile($user, $fileContent, $downloadDir ?: null, $paused, $labels);
             }
+
+            // Notify user about the newly added torrent
+            $torrentInfo = $result['torrent-added'] ?? $result['torrent-duplicate'] ?? null;
+            if ($torrentInfo !== null && isset($torrentInfo['name'])) {
+                $notifier->notifyDownloadComplete($user, $torrentInfo['name']);
+            }
+
             apiResponse(true, $result);
             break;
 
@@ -294,6 +371,7 @@ function handleSettingsApi(TorrentManager $manager, string $user, string $method
             break;
 
         case 'set':
+            requireAdmin($user);
             $settingsJson = $_REQUEST['settings'] ?? '{}';
             $settings = json_decode($settingsJson, true);
             if (!is_array($settings)) {
@@ -304,6 +382,7 @@ function handleSettingsApi(TorrentManager $manager, string $user, string $method
             break;
 
         case 'test_connection':
+            requireAdmin($user);
             $connected = $manager->testConnection();
             apiResponse(true, ['connected' => $connected]);
             break;
@@ -316,7 +395,7 @@ function handleSettingsApi(TorrentManager $manager, string $user, string $method
 /**
  * Handle SYNO.Transmission.RSS methods.
  */
-function handleRSSApi(RSSManager $rss, string $user, string $method): void
+function handleRSSApi(RSSManager $rss, string $user, string $method, RateLimiter $rateLimiter): void
 {
     switch ($method) {
         case 'list_feeds':
@@ -324,6 +403,8 @@ function handleRSSApi(RSSManager $rss, string $user, string $method): void
             break;
 
         case 'add_feed':
+            $rateLimiter->checkDefaultLimit($user, 'feed_add');
+
             $name = $_REQUEST['name'] ?? '';
             $url = $_REQUEST['url'] ?? '';
             $interval = (int)($_REQUEST['refresh_interval'] ?? 1800);
@@ -432,7 +513,7 @@ function handleRSSApi(RSSManager $rss, string $user, string $method): void
 /**
  * Handle SYNO.Transmission.Automation methods.
  */
-function handleAutomationApi(AutomationEngine $engine, string $user, string $method): void
+function handleAutomationApi(AutomationEngine $engine, string $user, string $method, RateLimiter $rateLimiter): void
 {
     switch ($method) {
         case 'list_rules':
@@ -440,6 +521,8 @@ function handleAutomationApi(AutomationEngine $engine, string $user, string $met
             break;
 
         case 'add_rule':
+            $rateLimiter->checkDefaultLimit($user, 'rule_add');
+
             $name = $_REQUEST['name'] ?? '';
             $triggerType = $_REQUEST['trigger_type'] ?? '';
             $triggerValue = $_REQUEST['trigger_value'] ?? null;

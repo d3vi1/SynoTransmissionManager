@@ -1,12 +1,16 @@
 /**
  * Util.js — Shared formatting and helper utilities.
  *
- * Provides formatSize, formatSpeed, formatEta, and showError.
+ * Provides formatSize, formatSpeed, formatEta, showError, showToast,
+ * and daemon-down banner management.
  * Used by TorrentGrid renderers, DetailPanel, and the status bar.
  */
 Ext.ns('SYNO.SDS.TransmissionManager');
 
 SYNO.SDS.TransmissionManager.Util = {
+
+    _daemonDown: false,
+    _daemonBannerEl: null,
 
     /**
      * Format a byte count as a human-readable size string.
@@ -73,14 +77,81 @@ SYNO.SDS.TransmissionManager.Util = {
     /**
      * Show an error message dialog.
      *
-     * @param {string} title Error title
-     * @param {Object} response API error response (optional)
+     * Accepts either (title, response) for API errors or just (message)
+     * for a simple error string.
+     *
+     * @param {string} title Error title or message
+     * @param {Object} [response] API error response (optional)
      */
     showError: function (title, response) {
         var message = title;
         if (response && response.error && response.error.message) {
             message += ': ' + response.error.message;
         }
-        Ext.Msg.alert(_T('error', 'add_failed') || 'Error', message);
+        Ext.Msg.alert(_T('category', 'error') || 'Error', message);
+    },
+
+    /**
+     * Show a temporary toast notification that auto-dismisses after 3 seconds.
+     *
+     * @param {string} message The message to display
+     * @param {string} type 'success' or 'error'
+     */
+    showToast: function (message, type) {
+        var cssClass = 'transmission-toast transmission-toast-' + (type || 'success');
+        var el = document.createElement('div');
+        el.className = cssClass;
+        el.innerHTML = Ext.util.Format.htmlEncode(message);
+        document.body.appendChild(el);
+
+        setTimeout(function () {
+            if (el && el.parentNode) {
+                el.parentNode.removeChild(el);
+            }
+        }, 3000);
+    },
+
+    /**
+     * Show a non-dismissable banner indicating the Transmission daemon
+     * is unreachable. Inserts at the top of the grid area.
+     */
+    showDaemonDown: function () {
+        if (this._daemonDown) {
+            return;
+        }
+        this._daemonDown = true;
+
+        var el = document.createElement('div');
+        el.className = 'transmission-daemon-down-banner';
+        el.id = 'transmission-daemon-down-banner';
+        el.innerHTML = Ext.util.Format.htmlEncode(
+            _T('ui', 'daemon_down') || 'Cannot connect to Transmission daemon'
+        );
+        document.body.appendChild(el);
+        this._daemonBannerEl = el;
+    },
+
+    /**
+     * Hide the daemon-down banner and clear the flag.
+     */
+    hideDaemonDown: function () {
+        if (!this._daemonDown) {
+            return;
+        }
+        this._daemonDown = false;
+
+        if (this._daemonBannerEl && this._daemonBannerEl.parentNode) {
+            this._daemonBannerEl.parentNode.removeChild(this._daemonBannerEl);
+        }
+        this._daemonBannerEl = null;
+    },
+
+    /**
+     * Check whether the daemon-down flag is currently set.
+     *
+     * @return {boolean}
+     */
+    isDaemonDown: function () {
+        return this._daemonDown;
     }
 };
