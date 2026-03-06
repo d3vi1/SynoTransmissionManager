@@ -1,0 +1,29 @@
+{
+    "SYNO.Transmission.Settings": {
+        "allowUser": ["admin.local", "admin.domain", "admin.ldap", "normal.local", "normal.domain", "normal.ldap"],
+        "appPriv": "",
+        "authLevel": 1,
+        "lib": "src/entry.php",
+        "methods": {
+            "1": [
+                {
+                    "name": "get",
+                    "allowDemo": false,
+                    "grantByDefault": true
+                },
+                {
+                    "name": "set",
+                    "allowDemo": false,
+                    "grantByDefault": false
+                },
+                {
+                    "name": "test_connection",
+                    "allowDemo": false,
+                    "grantByDefault": true
+                }
+            ]
+        },
+        "minVersion": 1,
+        "maxVersion": 1
+    }
+}
