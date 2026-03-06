@@ -1,0 +1,54 @@
+{
+    "SYNO.Transmission.Torrent": {
+        "allowUser": ["admin.local", "admin.domain", "admin.ldap", "normal.local", "normal.domain", "normal.ldap"],
+        "appPriv": "",
+        "authLevel": 1,
+        "lib": "src/entry.php",
+        "methods": {
+            "1": [
+                {
+                    "name": "list",
+                    "allowDemo": false,
+                    "grantByDefault": true
+                },
+                {
+                    "name": "get",
+                    "allowDemo": false,
+                    "grantByDefault": true
+                },
+                {
+                    "name": "add",
+                    "allowDemo": false,
+                    "grantByDefault": true
+                },
+                {
+                    "name": "start",
+                    "allowDemo": false,
+                    "grantByDefault": true
+                },
+                {
+                    "name": "stop",
+                    "allowDemo": false,
+                    "grantByDefault": true
+                },
+                {
+                    "name": "remove",
+                    "allowDemo": false,
+                    "grantByDefault": true
+                },
+                {
+                    "name": "set_files",
+                    "allowDemo": false,
+                    "grantByDefault": true
+                },
+                {
+                    "name": "set_labels",
+                    "allowDemo": false,
+                    "grantByDefault": true
+                }
+            ]
+        },
+        "minVersion": 1,
+        "maxVersion": 1
+    }
+}
