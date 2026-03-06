@@ -1,0 +1,49 @@
+[common]
+search = "Cautare"
+ok = "OK"
+cancel = "Anulare"
+
+[torrent]
+add_torrent = "Adauga Torrent"
+name = "Nume"
+size = "Dimensiune"
+progress = "Progres"
+status = "Stare"
+speed_down = "Viteza Descarcare"
+speed_up = "Viteza Incarcare"
+eta = "Timp Ramas"
+ratio = "Raport"
+start = "Porneste"
+pause = "Pauza"
+remove = "Sterge"
+
+[category]
+all = "Toate"
+downloading = "Se descarca"
+seeding = "Se distribuie"
+paused = "In pauza"
+error = "Eroare"
+
+[status]
+stopped = "Oprit"
+check_wait = "Asteapta verificare"
+checking = "Se verifica"
+download_wait = "Asteapta descarcare"
+downloading = "Se descarca"
+seed_wait = "Asteapta distribuire"
+seeding = "Se distribuie"
+unknown = "Necunoscut"
+
+[add]
+from_file = "Din Fisier"
+from_url = "Din URL"
+torrent_file = "Fisier Torrent"
+url_or_magnet = "URL sau Link Magnet"
+download_location = "Locatie Descarcare"
+start_paused = "Porneste in Pauza"
+labels = "Etichete"
+labels_hint = "Etichete separate prin virgula"
+add_torrent = "Adauga Torrent"
+
+[error]
+add_failed = "Adaugare torrent esuata"

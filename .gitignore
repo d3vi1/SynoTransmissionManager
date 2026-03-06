@@ -1,0 +1,27 @@
+# Agent configuration (local, not shared)
+CLAUDE.md
+AGENTS-local.md
+
+# Build artifacts
+build/
+*.spk
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dependencies
+node_modules/
+vendor/
+
+# Runtime
+*.pid
+*.log
+*.db

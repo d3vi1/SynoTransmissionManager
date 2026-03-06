@@ -1,0 +1,4 @@
+#!/bin/bash
+# Pre-uninstall script — stop service before removing
+/var/packages/TransmissionManager/scripts/start-stop-status stop || true
+exit 0

@@ -1,0 +1,23 @@
+#!/bin/bash
+# Post-installation script
+
+SYNOPKG_PKGDEST="/var/packages/TransmissionManager/target"
+CONFIG_DIR="/var/packages/TransmissionManager/var"
+
+# Create config directory
+mkdir -p "$CONFIG_DIR"
+
+# Set up database
+sqlite3 "$CONFIG_DIR/transmission.db" < "$SYNOPKG_PKGDEST/schema.sql"
+
+# Set permissions
+chown -R transmission:transmission "$CONFIG_DIR"
+chmod 755 "$CONFIG_DIR"
+
+# Copy default Transmission settings if not present
+if [ ! -f "$CONFIG_DIR/settings.json" ]; then
+    cp "$SYNOPKG_PKGDEST/etc/transmission-settings.json" "$CONFIG_DIR/settings.json"
+    chown transmission:transmission "$CONFIG_DIR/settings.json"
+fi
+
+exit 0

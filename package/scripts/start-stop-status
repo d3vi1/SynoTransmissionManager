@@ -1,0 +1,43 @@
+#!/bin/bash
+# Service control script for Transmission daemon
+
+TRANSMISSION_BIN="/var/packages/TransmissionManager/target/bin/transmission-daemon"
+PID_FILE="/var/packages/TransmissionManager/var/transmission.pid"
+CONFIG_DIR="/var/packages/TransmissionManager/var"
+
+case "$1" in
+    start)
+        if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
+            echo "Transmission is already running"
+            exit 0
+        fi
+
+        "$TRANSMISSION_BIN" \
+            --config-dir "$CONFIG_DIR" \
+            --pid-file "$PID_FILE" \
+            --logfile "$CONFIG_DIR/transmission.log"
+
+        exit $?
+        ;;
+
+    stop)
+        if [ ! -f "$PID_FILE" ]; then
+            echo "Transmission is not running"
+            exit 0
+        fi
+
+        kill "$(cat "$PID_FILE")"
+        rm -f "$PID_FILE"
+        exit 0
+        ;;
+
+    status)
+        if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
+            echo "Transmission is running"
+            exit 0
+        else
+            echo "Transmission is not running"
+            exit 1
+        fi
+        ;;
+esac

@@ -1,0 +1,49 @@
+[common]
+search = "Search"
+ok = "OK"
+cancel = "Cancel"
+
+[torrent]
+add_torrent = "Add Torrent"
+name = "Name"
+size = "Size"
+progress = "Progress"
+status = "Status"
+speed_down = "Down Speed"
+speed_up = "Up Speed"
+eta = "ETA"
+ratio = "Ratio"
+start = "Start"
+pause = "Pause"
+remove = "Remove"
+
+[category]
+all = "All"
+downloading = "Downloading"
+seeding = "Seeding"
+paused = "Paused"
+error = "Error"
+
+[status]
+stopped = "Stopped"
+check_wait = "Waiting to check"
+checking = "Checking"
+download_wait = "Waiting to download"
+downloading = "Downloading"
+seed_wait = "Waiting to seed"
+seeding = "Seeding"
+unknown = "Unknown"
+
+[add]
+from_file = "From File"
+from_url = "From URL"
+torrent_file = "Torrent File"
+url_or_magnet = "URL or Magnet Link"
+download_location = "Download Location"
+start_paused = "Start Paused"
+labels = "Labels"
+labels_hint = "Comma-separated labels"
+add_torrent = "Add Torrent"
+
+[error]
+add_failed = "Failed to add torrent"

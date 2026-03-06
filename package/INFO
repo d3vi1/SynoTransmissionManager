@@ -1,0 +1,32 @@
+package="TransmissionManager"
+version="0.1.0-dev"
+description="Modern Transmission BitTorrent client for DSM"
+arch="noarch"
+maintainer="d3vi1"
+maintainer_url="https://github.com/d3vi1/SynoTransmissionManager"
+
+# Installation requirements
+os_min_ver="7.0-40000"
+thirdparty="yes"
+
+# Display in Package Center
+displayname="Transmission Manager"
+description_enu="Professional BitTorrent client with RSS automation and post-processing"
+description_rum="Client BitTorrent profesional cu automatizare RSS si post-procesare"
+
+# Desktop integration
+dsmappname="SYNO.SDS.TransmissionManager"
+dsmuidir="ui"
+
+# Permissions
+adminprotocol="no"
+
+# Start/stop behavior
+startable="yes"
+ctl_stop="yes"
+
+# Conflict with other packages
+install_conflict_packages="DownloadStation"
+
+# Support
+support_url="https://github.com/d3vi1/SynoTransmissionManager"
