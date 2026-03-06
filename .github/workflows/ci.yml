@@ -22,6 +22,7 @@ jobs:
       - name: Syntax check all PHP files
         run: |
           find webapi/ -name '*.php' -print0 | xargs -0 -n1 php -l
+          find tests/ -name '*.php' -print0 | xargs -0 -n1 php -l
           if [ -f ui/index.php ]; then php -l ui/index.php; fi
 
   lint-js:
@@ -34,21 +35,24 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci --ignore-scripts || true
+        run: npm ci
 
       - name: Lint JavaScript
         run: |
-          if [ -f .eslintrc.json ] || [ -f .eslintrc.js ] || [ -f .eslintrc.yml ]; then
-            npx eslint ui/modules/ --ext .js
+          JS_FILES=$(find ui/modules/ ui/config/ -name '*.js' 2>/dev/null || true)
+          if [ -n "$JS_FILES" ]; then
+            npx eslint $JS_FILES
           else
-            echo "ESLint not yet configured, skipping"
+            echo "No JS files to lint"
           fi
 
   test-php:
     name: PHP Tests
     runs-on: ubuntu-latest
+    needs: [lint-php]
     steps:
       - uses: actions/checkout@v4
 
@@ -58,39 +62,42 @@ jobs:
           php-version: '7.4'
           extensions: curl, json, sqlite3
           tools: composer
+          coverage: xdebug
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
 
       - name: Install dependencies
-        run: |
-          if [ -f composer.json ]; then
-            composer install --no-interaction --prefer-dist
-          fi
+        run: composer install --no-interaction --prefer-dist
 
       - name: Run PHPUnit tests
-        run: |
-          if [ -d tests ] && [ -f vendor/bin/phpunit ]; then
-            ./vendor/bin/phpunit tests/
-          else
-            echo "No tests configured yet, skipping"
-          fi
+        run: ./vendor/bin/phpunit --coverage-clover build/coverage/clover.xml
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: php-coverage
+          path: build/coverage/
+          retention-days: 7
 
   build-spk:
     name: Build SPK Package
     runs-on: ubuntu-latest
-    needs: [lint-php, lint-js]
+    needs: [lint-php, lint-js, test-php]
     steps:
       - uses: actions/checkout@v4
 
       - name: Build package
         run: |
-          if [ -f build.sh ]; then
-            chmod +x build.sh
-            ./build.sh
-          else
-            echo "Build script not yet created, skipping"
-          fi
+          chmod +x build.sh
+          ./build.sh
 
       - name: Upload SPK artifact
-        if: success() && hashFiles('build/*.spk') != ''
         uses: actions/upload-artifact@v4
         with:
           name: spk-package
@@ -100,10 +107,10 @@ jobs:
     name: Playwright E2E
     runs-on: ubuntu-latest
     if: >
-      github.event_name == 'pull_request' &&
-      contains(github.event.pull_request.title, '[UI]') ||
-      github.event_name == 'pull_request' &&
-      contains(join(github.event.pull_request.labels.*.name, ','), 'ui')
+      github.event_name == 'pull_request' && (
+        contains(github.event.pull_request.title, '[UI]') ||
+        contains(join(github.event.pull_request.labels.*.name, ','), 'ui')
+      )
     needs: [build-spk]
     steps:
       - uses: actions/checkout@v4
@@ -112,6 +119,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci

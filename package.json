@@ -1,0 +1,16 @@
+{
+  "name": "syno-transmission-manager",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Native Synology DSM package for Transmission BitTorrent client",
+  "scripts": {
+    "lint": "eslint ui/modules/ --ext .js",
+    "lint:fix": "eslint ui/modules/ --ext .js --fix",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:ui": "playwright test --ui"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0"
+  }
+}
