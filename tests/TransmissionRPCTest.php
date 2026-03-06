@@ -3,8 +3,7 @@
 declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
-
-// TestableTransmissionRPC is in tests/Support/ and autoloaded via composer
+use Tests\Support\TestableTransmissionRPC;
 
 /**
  * Comprehensive unit tests for TransmissionRPC.

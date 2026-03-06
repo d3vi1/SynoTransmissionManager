@@ -3,11 +3,12 @@
 declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
+use Tests\Support\TestableTransmissionRPC;
 
 /**
  * Comprehensive tests for TorrentManager.
  *
- * Uses TestableTransmissionRPC (from TransmissionRPCTest.php) and
+ * Uses TestableTransmissionRPC (from tests/Support/) and
  * an in-memory Database to test the orchestration layer without
  * network calls.
  */

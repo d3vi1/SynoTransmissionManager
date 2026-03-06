@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+namespace Tests\Support;
+
+use TransmissionRPC;
+
 /**
  * Testable subclass that captures RPC calls instead of making HTTP requests.
  *

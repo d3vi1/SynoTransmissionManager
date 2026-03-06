@@ -1,0 +1,32 @@
+{
+    "SYNO.Transmission.Automation": {
+        "path": "src/entry.php",
+        "lib": "webapi",
+        "methods": {
+            "1": {
+                "list_rules": {
+                    "grantByDefault": true,
+                    "allowUser": ["admin.local", "admin.ldap", "admin.domain", "normal.local", "normal.ldap", "normal.domain"]
+                },
+                "add_rule": {
+                    "grantByDefault": true,
+                    "allowUser": ["admin.local", "admin.ldap", "admin.domain", "normal.local", "normal.ldap", "normal.domain"]
+                },
+                "update_rule": {
+                    "grantByDefault": true,
+                    "allowUser": ["admin.local", "admin.ldap", "admin.domain", "normal.local", "normal.ldap", "normal.domain"]
+                },
+                "delete_rule": {
+                    "grantByDefault": true,
+                    "allowUser": ["admin.local", "admin.ldap", "admin.domain", "normal.local", "normal.ldap", "normal.domain"]
+                },
+                "test_rule": {
+                    "grantByDefault": true,
+                    "allowUser": ["admin.local", "admin.ldap", "admin.domain", "normal.local", "normal.ldap", "normal.domain"]
+                }
+            }
+        },
+        "minVersion": 1,
+        "maxVersion": 1
+    }
+}
